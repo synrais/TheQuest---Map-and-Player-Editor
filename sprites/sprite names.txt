@@ -1,0 +1,277 @@
+enemy_-15[Priestess].png
+enemy_-14[Holy Guard].png
+enemy_-13[Lost Monster].png
+enemy_-12[Aristrocrate Woman].png
+enemy_-11[Aristocrat Male].png
+enemy_-10[Monk].png
+enemy_-9[Fisherman].png
+enemy_-8[Guard].png
+enemy_-7[Woman].png
+enemy_-6[Farmer].png
+enemy_-5[Shopkeeper].png
+enemy_1[Imp].png
+enemy_2[Orc].png
+enemy_3[Slinger].png
+enemy_4[Moose].png
+enemy_5[Witch].png
+enemy_6[Skeleton].png
+enemy_7[Reaper].png
+enemy_8[Mage].png
+enemy_9[Tribal Clubman].png
+enemy_10[Tribal Spearman].png
+enemy_11[Lightning Spellcaster].png
+enemy_12[Scorpion].png
+enemy_13[Tribal Elite Spearman].png
+enemy_14[Corrupt Monk].png
+enemy_15[Tribal Leader].png
+enemy_16[Pirate Buccaneer .png
+enemy_17[Archer].png
+enemy_18[Knight Swordsman].png
+enemy_19[Knight Mace].png
+enemy_20[Knight Morningstar].png
+enemy_21[Knight Pike].png
+enemy_22[Wraith Invisible].png
+enemy_23[Wraith Revealed].png
+enemy_24[Oculus Overlord].png
+enemy_25[Oculus Minion].png
+enemy_26[Archer Elite].png
+enemy_27[Archer Poison Longbow].png
+enemy_28[Skeleton Barbarian].png
+enemy_29[Skeleton Warrior].png
+enemy_30[Skeleton Archer].png
+enemy_31[Skeleton Vampire].png
+enemy_32[Skeleton Necromancer].png
+enemy_33[Skeleton Poison Spitter].png
+enemy_34[Skeleton Overlord].png
+enemy_35[Fate Bringer].png
+enemy_36[Stone Knight].png
+enemy_37[Holy Knight].png
+enemy_38[Clearic].png
+enemy_39[Holy Knight Crossbow].png
+enemy_40[Stone Knight Battleaxe].png
+enemy_41[Light Bringer].png
+enemy_42[Spider Demon].png
+enemy_43[Spider Demon Ruler].png
+enemy_44[Spider Demon Kamikaze].png
+enemy_45[Death Bringer-Magic form].png
+enemy_46[Death Bringer-Melee form].png
+enemy_47[Pirate Rapier].png
+extra_1[Opened Door].png
+extra_2[Opened Chest].png
+extra_3[Blood with Limb].png
+extra_4[Bloody Footprints].png
+extra_5[Blood Puddle].png
+extra_6[Dark Blood Puddle].png
+floor_1[Grass].png
+floor_2[Pebbled Footpath].png
+floor_3[Small Shrubs].png
+floor_4[Red Carpet].png
+floor_6[Grey Carpet].png
+floor_7[Water Bridge].png
+floor_8[Desert Sand].png
+gold.png
+hero_Knight.png
+hero_Mage.png
+hero_Monk.png
+hero_Rogue.png
+object_1[Minor Health Potion].png
+object_2[Full Health Potion].png
+object_3[Minor Mana Potion].png
+object_4[Full Mana Potion].png
+object_5[Minor Restoration Potion].png
+object_6[Full Restoration Potion].png
+object_7[Cure Poison Potion].png
+object_8[Beserker Potion].png
+object_9[Emerald].png
+object_11[Meat].png
+object_12[Gold Key].png
+object_13[Red Key].png
+object_14[Blue Key].png
+object_15[Closed Chest].png
+object_16[Ruby].png
+object_17[Seaweed].png
+object_101[Leather Armor].png
+object_102[Tin Armor].png
+object_103[Copper Armor].png
+object_104[Chain Mail].png
+object_105[Ring Mail Armor].png
+object_106[Silver Armor].png
+object_107[Gold Armor].png
+object_108[Red Iron Armor].png
+object_111[Cloak].png
+object_112[Shawl].png
+object_113[Cape].png
+object_114[Scarlet Robe].png
+object_201[Club].png
+object_202[Knife].png
+object_203[Quarter Staff].png
+object_204[Dagger].png
+object_205[Rapier].png
+object_206[Spear].png
+object_207[Morning Star].png
+object_208[Short Sword].png
+object_209[Cutlass].png
+object_210[Pike].png
+object_211[Long Sword].png
+object_212[Axe].png
+object_213[Mace].png
+object_214[Great Staff].png
+object_215[Machette].png
+object_216[Long Sword].png
+object_217[Sacrificial Dagger].png
+object_218[Lance].png
+object_219[Battleaxe].png
+object_220[Sword of Darkness].png
+object_221[Staff of Doom].png
+object_222[Broad Sword].png
+object_230[Sling].png
+object_231[Short Bow].png
+object_232[Long Bow].png
+object_233[Crossbow].png
+object_301[Buckler].png
+object_302[Small Shield].png
+object_303[Medium Shield].png
+object_304[Bashing Shield].png
+object_305[Tower Shield].png
+object_306[Kite Shield].png
+object_401[Sheepskin Helmet].png
+object_402[Wooden Helmet].png
+object_403[Helmet of the Mind].png
+object_404[Silver Helmet].png
+object_405[Black Iron Helmet].png
+object_406[Golden Halo].png
+object_407[Golden Helmet].png
+object_408[Red Iron Helmet].png
+object_501[Cocoon Amulet].png
+object_502[Stoic Necklace].png
+object_503[Amulet of Bravery].png
+object_504[Evergreen Amulet].png
+object_505[Amulet of Balance].png
+object_506[Medallion of Madness].png
+object_507[Amulet of Fury].png
+object_508[Ruby Necklace].png
+object_509[Mariannes Necklace].png
+object_510[Obsidian Amulet].png
+object_511[Pearl Necklace].png
+object_601[Pebbles-01].png
+object_602[Pebbles-02].png
+object_603[Pebbles-03].png
+object_604[Pebbles-04.png
+object_605[Pebbles-05].png
+object_606[Pebbles-06].png
+object_607[Pebbles-07].png
+object_608[Pebbles-08].png
+object_609[Pebbles-09].png
+object_610[Pebbles-10].png
+object_611[Pebbles-11].png
+object_612[Pebbles-12].png
+object_613[Pebbles-13].png
+object_614[Pebbles-14].png
+object_615[Pebbles-15].png
+object_616[Pebbles-16].png
+object_617[Pebbles-17].png
+object_618[Pebbles-18].png
+object_619[Pebbles-19].png
+object_620[Pebbles-20].png
+object_621[Arrows-01].png
+object_622[Arrows-02].png
+object_623[Arrows-03].png
+object_624[Arrows-04].png
+object_625[Arrows-05].png
+object_626[Arrows-06].png
+object_627[Arrows-07].png
+object_628[Arrows-08].png
+object_629[Arrows-09].png
+object_630[Arrows-10].png
+object_631[Arrows-11].png
+object_632[Arrows-12].png
+object_633[Arrows-13].png
+object_634[Arrows-14].png
+object_635[Arrows-15].png
+object_636[Arrows-16].png
+object_637[Arrows-17].png
+object_638[Arrows-18].png
+object_639[Arrows-19].png
+object_640[Arrows-20].png
+object_641[Poison Arrows-01].png
+object_642[Poison Arrows-02].png
+object_643[Poison Arrows-03].png
+object_644[Poison Arrows-04].png
+object_645[Poison Arrows-05].png
+object_646[Poison Arrows-06].png
+object_647[Poison Arrows-07].png
+object_648[Poison Arrows-08].png
+object_649[Poison Arrows-09].png
+object_650[Poison Arrows-10].png
+object_651[Poison Arrows-11].png
+object_652[Poison Arrows-12].png
+object_653[Poison Arrows-13].png
+object_654[Poison Arrows-14].png
+object_655[Poison Arrows-15].png
+object_656[Poison Arrows-16].png
+object_657[Poison Arrows-17].png
+object_658[Poison Arrows-18].png
+object_659[Poison Arrows-19].png
+object_660[Poison Arrows-20].png
+object_661[Bolts-01].png
+object_662[Bolts-02].png
+object_663[Bolts-03].png
+object_664[Bolts-04].png
+object_665[Bolts-05].png
+object_666[Bolts-06].png
+object_667[Bolts-07].png
+object_668[Bolts-08].png
+object_669[Bolts-09].png
+object_670[Bolts-10].png
+object_671[Bolts-11].png
+object_672[Bolts-12].png
+object_673[Bolts-13].png
+object_674[Bolts-14].png
+object_675[Bolts-15].png
+object_676[Bolts-16].png
+object_677[Bolts-17].png
+object_678[Bolts-18].png
+object_679[Bolts-19].png
+object_680[Bolts-20].png
+object_999[Lvl5 Teleporter].png
+object_1000[Level Exit].png
+spell_1[Heal].png
+spell_2[Flame].png
+spell_3[Teleport].png
+spell_4[Shield].png
+spell_5[Ring of Ice].png
+spell_6[Black Ward].png
+spell_7_[Invisibility].png
+spell_8[Summon Skeleton].png
+spell_9[Inferno].png
+spell_10[Restore].png
+spell_11[Life Drain].png
+spell_12[Thunder Bolt].png
+spell_13[Shield of Fire].png
+spell_14[Deteriorate].png
+spell_15[Summon Stone Knight].png
+spell_16[Earthquake].png
+spell_17[Cure].png
+spell_18[Summon Scorpion].png
+spell_19[Meteor].png
+spell_20[Dark Hour].png
+wall_-6[Diamond Mesh Gray].png
+wall_-5[Stippled Dark Gray].png
+wall_-4[Locked Blue Key Door].png
+wall_-3[Locked Red Key Door].png
+wall_-2[Locked Gold Key Door].png
+wall_-1[Door].png
+wall_1[Pine Trees].png
+wall_2[Water].png
+wall_3[Pine Trees].png
+wall_4[Diagonal Pinstripe White].png
+wall_5[Boulder].png
+wall_6[Apple Tree].png
+wall_7[Wishing Well].png
+wall_8[Decayed Tree].png
+wall_9[Table].png
+wall_10[Stippled Dark Gray].png
+wall_11[Diamond Mesh Gray].png
+wall_12[Diagonal Pinstripe Amber].png
+wall_13[Diamond Mesh Amber].png
+wall_14[Diagonal Pinstripe Red].png
