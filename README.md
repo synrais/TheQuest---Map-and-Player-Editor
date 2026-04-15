@@ -1,4 +1,3 @@
-"""
 The Quest — Level Editor
 Reads/writes L00001.dat – L00007.dat map files and SAVE*.dat save files.
 
@@ -61,4 +60,3 @@ SPELL IDs (lines 11358–11397 and 11398–11417):
   13=Shield of Fire 14=Deteriorate   15=Summon Stone Knight
   16=Earthquake     17=Cure          18=Summon Scorpion
   19=Meteor         20=Dark Hour
-"""
