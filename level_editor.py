@@ -344,8 +344,6 @@ _SPRITE_PATTERN = _re.compile(r'^(floor|wall|enemy|object|extra)_(-?\d+)(?:\[.*\
 
 # (stem, size) → PhotoImage — module-level to survive GC
 _sprite_cache: dict[tuple[str, int], ImageTk.PhotoImage | None] = {}
-# (stem, size) → PIL Image — used by composite-image renderer
-_pil_cache: dict[tuple[str, int], Image.Image | None] = {}
 
 
 def _scan_sprites() -> tuple[dict, dict, dict, dict, dict]:
@@ -444,11 +442,6 @@ class LevelEditor(tk.Tk):
         # Fill tool drag state
         self._fill_start: tuple[int, int] | None = None
         self._fill_rect_id = None  # canvas item for the drag preview rectangle
-        # Composite image cache for low-zoom pan performance
-        self._map_photo_image: ImageTk.PhotoImage | None = None  # keeps ref alive
-        # Zoom threshold below which we use a single composite image instead of
-        # individual canvas items.  80 px = ~200 % zoom — a good crossover point.
-        self._COMPOSITE_THRESHOLD = 80
 
         self._build_ui()
         self._new_map()
@@ -1304,95 +1297,17 @@ class LevelEditor(tk.Tk):
 
     # ── Drawing ───────────────────────────────────────────────────────────────
 
-    def _render_map_image(self, cs: int) -> Image.Image:
-        """Render the entire map into a single PIL RGBA image at cell size cs.
-
-        This is used in composite-image mode (low zoom) so panning moves just
-        one canvas item instead of tens of thousands, eliminating lag."""
-        from PIL import ImageDraw
-        total = MAP_SIZE * cs
-        img   = Image.new("RGB", (total, total))
-        draw  = ImageDraw.Draw(img)
-
-        # Draw every tile as a solid colour rectangle (optionally with sprite)
-        for y in range(MAP_SIZE):
-            for x in range(MAP_SIZE):
-                tile = self.grid_data[y][x]
-                tile_type, variant, obj_id, enemy_id, gold, extra_id = tile
-                x0, y0 = x * cs, y * cs
-
-                # Base colour fill
-                col = tile_color(tile_type, variant)
-                draw.rectangle([x0, y0, x0+cs-1, y0+cs-1], fill=col)
-
-                # Paste sprite layers if they exist at this size
-                for stem in [
-                    TILE_TYPE_SPRITES.get(tile_type, ""),
-                    VARIANT_SPRITES.get(variant, ""),
-                    EXTRA_SPRITES.get(extra_id, "") if extra_id != 0 else "",
-                    "gold" if gold > 0 else "",
-                    ENEMY_SPRITES.get(enemy_id, "") if enemy_id != 0 else "",
-                    OBJECT_SPRITES.get(obj_id, "") if obj_id != 0 else "",
-                ]:
-                    if not stem:
-                        continue
-                    path = os.path.join(SPRITES_DIR, stem + ".png")
-                    if not os.path.exists(path):
-                        continue
-                    key = (stem, cs)
-                    if key not in _pil_cache:
-                        _pil_cache[key] = Image.open(path).convert("RGBA").resize(
-                            (cs, cs), Image.NEAREST)
-                    cached = _pil_cache[key]
-                    if cached is not None:
-                        img.paste(cached, (x0, y0), cached)
-
-        # Tile grid
-        if cs >= 4 and self.show_tile_grid.get():
-            for i in range(MAP_SIZE + 1):
-                draw.line([(0, i*cs), (total-1, i*cs)], fill="#2a2a3e")
-                draw.line([(i*cs, 0), (i*cs, total-1)], fill="#2a2a3e")
-
-        # Screen boundary grid
-        if self.show_screen_grid.get():
-            for i in range(0, MAP_SIZE + 1, 10):
-                draw.line([(0, i*cs), (total-1, i*cs)], fill="#000000", width=2)
-                draw.line([(i*cs, 0), (i*cs, total-1)], fill="#000000", width=2)
-
-        return img
-
     def _redraw(self):
-        """Full canvas redraw.
-
-        At low zoom (cell_size ≤ _COMPOSITE_THRESHOLD) we render the entire map
-        into a single PIL image and display it as one canvas item.  This makes
-        panning trivially cheap regardless of map complexity.
-
-        At higher zoom we fall back to the original per-tile canvas-item
-        approach, which supports hover highlights, start-marker overlay, etc."""
+        """Full canvas redraw. Tagged layers ensure grids are always above tiles
+        and the start marker is always on top."""
         if self.grid_data is None:
             return
         cs    = self.cell_size
         total = MAP_SIZE * cs
 
-        self.canvas.delete("tile", "grid_tile", "grid_screen", "start_marker",
-                           "hover", "map_composite")
+        # Delete every tagged layer; the canvas is fully rebuilt below
+        self.canvas.delete("tile", "grid_tile", "grid_screen", "start_marker", "hover")
         self.canvas.configure(scrollregion=(0, 0, total, total))
-
-        if cs <= self._COMPOSITE_THRESHOLD:
-            # ── Composite image mode: one canvas item, fast panning ──────────
-            map_img = self._render_map_image(cs)
-            # Keep a reference so the PhotoImage isn't garbage-collected
-            self._map_photo_image = ImageTk.PhotoImage(map_img)
-            self.canvas.create_image(0, 0, anchor="nw",
-                                     image=self._map_photo_image,
-                                     tags="map_composite")
-            # Draw start marker on top if applicable
-            self._draw_start_marker()
-            return
-
-        # ── Per-item mode: normal editing quality ────────────────────────────
-        self._map_photo_image = None  # release composite image memory
 
         for y in range(MAP_SIZE):
             for x in range(MAP_SIZE):
@@ -1537,12 +1452,6 @@ class LevelEditor(tk.Tk):
             self.selected_object,    self.selected_enemy,
             self.selected_gold,      self.selected_extra,
         ]
-
-        # In composite-image mode a full redraw re-generates the single image;
-        # this is fast and keeps the display correct without touching canvas items.
-        if self.cell_size <= self._COMPOSITE_THRESHOLD:
-            self._redraw()
-            return
 
         # Remove only the "tile"-tagged items that lie within this cell's pixel rect.
         # Grid lines ("grid_tile", "grid_screen") and the start marker live on
@@ -1842,7 +1751,7 @@ class LevelEditor(tk.Tk):
         # For large snapshots (e.g. undoing a fill) a full redraw is much
         # faster than thousands of individual find_withtag + repaint calls.
         # For small snapshots a targeted repaint + grid refresh is cheaper.
-        if len(snapshot) > 50 or self.cell_size <= self._COMPOSITE_THRESHOLD:
+        if len(snapshot) > 50:
             self._redraw()
         else:
             for (x, y) in snapshot:
