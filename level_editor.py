@@ -1331,6 +1331,25 @@ class LevelEditor(tk.Tk):
 
         self._draw_start_marker()
 
+    def _redraw_grids(self):
+        """Redraw only the grid lines without touching tiles.
+        Called after partial tile updates (undo, etc.) to restore grid visibility."""
+        self.canvas.delete("grid_tile", "grid_screen")
+        cs    = self.cell_size
+        total = MAP_SIZE * cs
+        if cs >= 4 and self.show_tile_grid.get():
+            for i in range(MAP_SIZE + 1):
+                self.canvas.create_line(0, i*cs, total, i*cs,
+                                        fill="#2a2a3e", width=1, tags="grid_tile")
+                self.canvas.create_line(i*cs, 0, i*cs, total,
+                                        fill="#2a2a3e", width=1, tags="grid_tile")
+        if self.show_screen_grid.get():
+            for i in range(0, MAP_SIZE + 1, 10):
+                self.canvas.create_line(0, i*cs, total, i*cs,
+                                        fill="#000000", width=2, tags="grid_screen")
+                self.canvas.create_line(i*cs, 0, i*cs, total,
+                                        fill="#000000", width=2, tags="grid_screen")
+
     def _draw_start_marker(self):
         """Draw the class-specific hero sprite at start_pos; 'P' text as fallback."""
         self.canvas.delete("start_marker")
@@ -1726,9 +1745,18 @@ class LevelEditor(tk.Tk):
         if self.grid_data is None:
             return
         snapshot = self._undo_stack.pop()
+        # Restore tile data first
         for (x, y), old_tile in snapshot.items():
             self.grid_data[y][x] = list(old_tile)
-            self._repaint_tile(x, y)
+        # For large snapshots (e.g. undoing a fill) a full redraw is much
+        # faster than thousands of individual find_withtag + repaint calls.
+        # For small snapshots a targeted repaint + grid refresh is cheaper.
+        if len(snapshot) > 50:
+            self._redraw()
+        else:
+            for (x, y) in snapshot:
+                self._repaint_tile(x, y)
+            self._redraw_grids()   # restore grid lines erased by _repaint_tile
         self.status_var.set(f"Undo — restored {len(snapshot)} tile(s)  "
                             f"({len(self._undo_stack)} step(s) left)")
 
@@ -1788,9 +1816,13 @@ class LevelEditor(tk.Tk):
                 self.grid_data[fy][fx] = list(new_tile)
         self._push_undo(snapshot)
 
-        for fy in range(y0, y1 + 1):
-            for fx in range(x0, x1 + 1):
-                self._repaint_tile(fx, fy)
+        # Full canvas redraw is far faster than calling _repaint_tile for every
+        # cell (which internally scans all canvas items per tile via find_withtag).
+        # It also correctly restores grid lines in one pass.
+        self._redraw()
+
+        # Reset fill mode so the button returns to its normal state
+        self._cancel_mode()
 
         count = (x1 - x0 + 1) * (y1 - y0 + 1)
         self.status_var.set(f"Filled {count} tile(s)  ({x0+1},{y0+1}) → ({x1+1},{y1+1})")
