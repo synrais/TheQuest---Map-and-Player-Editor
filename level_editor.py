@@ -1,5 +1,5 @@
 """
-The Quest — Level Editor
+The Quest — Map and Player Editor
 Reads/writes L00001.dat – L00007.dat map files and SAVE*.dat save files.
 
 ════════════════════════════════════════════════════════════════════
@@ -415,7 +415,7 @@ def _center_window(win: tk.Wm, w: int, h: int):
 class LevelEditor(tk.Tk):
     def __init__(self):
         super().__init__()
-        self.title("The Quest — Level Editor")
+        self.title("The Quest — Map and Player Editor")
         self.resizable(True, True)
 
         self.grid_data: list[list[list[int]]] | None = None
@@ -1151,7 +1151,7 @@ class LevelEditor(tk.Tk):
         self.current_file    = None
         self.player_class_id = 1
         self._undo_stack.clear()
-        self.title("The Quest — Level Editor — [New Map]")
+        self.title("The Quest — Map and Player Editor — [New Map]")
         self._set_player_start_visible(False)
         self._redraw()
 
@@ -1190,7 +1190,7 @@ class LevelEditor(tk.Tk):
                 self.player_class_id = 1
                 self._set_player_start_visible(False)
                 self.status_var.set(f"Opened level: {name}")
-            self.title(f"The Quest — Level Editor — {name}")
+            self.title(f"The Quest — Map and Player Editor — {name}")
             self._redraw()
             if is_save_file(path):
                 # Scroll to centre on the player position after the canvas is drawn
@@ -1211,7 +1211,7 @@ class LevelEditor(tk.Tk):
         if path:
             self._do_save(path)
             self.current_file = path
-            self.title(f"The Quest — Level Editor — {os.path.basename(path)}")
+            self.title(f"The Quest — Map and Player Editor — {os.path.basename(path)}")
 
     def _do_save(self, path: str):
         try:
@@ -1522,7 +1522,7 @@ class LevelEditor(tk.Tk):
 
         pct = round(new_cs / CELL * 100)
         self.title(
-            "The Quest — Level Editor"
+            "The Quest — Map and Player Editor"
             + (f" — {os.path.basename(self.current_file)}" if self.current_file else "")
             + f"  [{pct}%]"
         )
