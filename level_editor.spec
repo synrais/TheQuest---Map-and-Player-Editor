@@ -1,13 +1,4 @@
 # -*- mode: python ; coding: utf-8 -*-
-# PyInstaller spec for The Quest Level Editor
-#
-# Build command (run from the folder containing this file):
-#   pyinstaller level_editor.spec
-#
-# Output: dist/Level Editor.exe
-#
-# Requirements:
-#   pip install pyinstaller pillow
 
 block_cipher = None
 
@@ -16,20 +7,49 @@ a = Analysis(
     pathex=[],
     binaries=[],
     datas=[
-        ('sprites', 'sprites'),   # bundle the sprites folder
+        ('sprites', 'sprites'),
     ],
-    hiddenimports=[],
+    hiddenimports=[
+        'PIL._imaging',
+        'PIL._tkinter_finder',
+    ],
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
-    excludes=[],
+    excludes=[
+        # safe trims
+        'unittest',
+        'pydoc',
+        'doctest',
+
+        # remove pywin32 bloat
+        'win32com',
+        'pythoncom',
+        'pywintypes',
+
+        # unused Pillow parts
+        'PIL.ImageQt',
+        'PIL.ImageCms',
+        'PIL.BmpImagePlugin',
+        'PIL.GifImagePlugin',
+        'PIL.TiffImagePlugin',
+
+        # optional heavy libs
+        'numpy',
+        'matplotlib',
+        'scipy',
+    ],
     win_no_prefer_redirects=False,
     win_private_assemblies=False,
     cipher=block_cipher,
     noarchive=False,
 )
 
-pyz = PYZ(a.pure, a.zipped_data, cipher=block_cipher)
+pyz = PYZ(
+    a.pure,
+    a.zipped_data,
+    cipher=block_cipher
+)
 
 exe = EXE(
     pyz,
@@ -38,18 +58,18 @@ exe = EXE(
     a.zipfiles,
     a.datas,
     [],
-    name='Level Editor',
+    name='The Quest Map and Player Editor',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
     upx=True,
     upx_exclude=[],
     runtime_tmpdir=None,
-    console=False,        # no terminal window
+    console=False,
     disable_windowed_traceback=False,
     argv_emulation=False,
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-    # icon='icon.ico',    # uncomment and point to a .ico file if you have one
+    icon='icon.ico',
 )
