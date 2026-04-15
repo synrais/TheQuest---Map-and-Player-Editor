@@ -1759,7 +1759,7 @@ class LevelEditor(tk.Tk):
         y1 = (max(self._fill_start[1], ty) + 1) * cs
         self._fill_rect_id = self.canvas.create_rectangle(
             x0, y0, x1, y1,
-            outline="#fab387", width=2, fill="#fab38730", tags="fill_preview")
+            outline="#fab387", width=2, tags="fill_preview")
 
     def _apply_fill(self, tx: int, ty: int):
         """Fill the rectangle from _fill_start to (tx,ty) with the current tile."""
