@@ -395,11 +395,11 @@ def _sprite_label(stem: str, fallback: str) -> str:
 
 CELL = 40   # native sprite size in pixels
 
-ZOOM_STEPS       = [3, 4, 5, 6, 8, 10, 14, 20, 28, 40, 56, 80, 120]
+ZOOM_STEPS       = [3, 4, 5, 6, 8, 10, 14, 20, 28, 40, 56, 80, 120, 160]
 ZOOM_DEFAULT_IDX = 9   # 40 px = 100 %
 
 _ZOOM_BTN = [(1, "10%"), (4, "20%"), (5, "25%"), (7, "50%"),
-             (9, "100%"), (11, "200%"), (12, "300%")]
+             (9, "100%"), (11, "200%"), (12, "300%"), (13, "400%")]
 
 _SWATCH  = 20
 _PREVIEW = 160
@@ -436,6 +436,12 @@ class LevelEditor(tk.Tk):
         self.show_tile_grid   = tk.BooleanVar(value=True)
         self.show_screen_grid = tk.BooleanVar(value=True)
         self._swatch_imgs: dict[str, ImageTk.PhotoImage] = {}
+
+        # Undo history: list of {(x,y): old_tile_data}
+        self._undo_stack: list[dict] = []
+        # Fill tool drag state
+        self._fill_start: tuple[int, int] | None = None
+        self._fill_rect_id = None  # canvas item for the drag preview rectangle
 
         self._build_ui()
         self._new_map()
@@ -475,6 +481,7 @@ class LevelEditor(tk.Tk):
         self.bind("<Control-o>", lambda e: self._open())
         self.bind("<Control-s>", lambda e: self._save())
         self.bind("<Escape>",    lambda e: self._cancel_mode())
+        self.bind("<Control-z>", lambda e: self._undo())
 
         main = tk.Frame(self, bg="#1e1e2e")
         main.pack(fill="both", expand=True, padx=4, pady=4)
@@ -534,6 +541,18 @@ class LevelEditor(tk.Tk):
                   activebackground="#585b70", relief="flat", bd=0, pady=3,
                   command=self._toggle_copy_mode)
         self.copy_tile_btn.pack(fill="x", pady=(4, 0))
+
+        self.fill_btn = tk.Button(parent, text="Fill",
+                  font=("Consolas", 8), bg="#45475a", fg="#cdd6f4",
+                  activebackground="#585b70", relief="flat", bd=0, pady=3,
+                  command=self._toggle_fill_mode)
+        self.fill_btn.pack(fill="x", pady=(2, 0))
+
+        self.undo_btn = tk.Button(parent, text="Undo  (Ctrl+Z)",
+                  font=("Consolas", 8), bg="#45475a", fg="#f38ba8",
+                  activebackground="#585b70", relief="flat", bd=0, pady=3,
+                  command=self._undo)
+        self.undo_btn.pack(fill="x", pady=(2, 0))
 
         ttk.Separator(parent, orient="horizontal").pack(fill="x", pady=(6, 6))
 
@@ -1131,6 +1150,7 @@ class LevelEditor(tk.Tk):
                                  for _ in range(MAP_SIZE)]
         self.current_file    = None
         self.player_class_id = 1
+        self._undo_stack.clear()
         self.title("The Quest — Level Editor — [New Map]")
         self._set_player_start_visible(False)
         self._redraw()
@@ -1153,6 +1173,7 @@ class LevelEditor(tk.Tk):
         try:
             self.grid_data    = load_map(path)
             self.current_file = path
+            self._undo_stack.clear()
             name = os.path.basename(path)
             if is_save_file(path):
                 with open(path, 'rb') as fh:
@@ -1404,6 +1425,9 @@ class LevelEditor(tk.Tk):
         if self.grid_data is None:
             return
         self._update_selection()
+        # Record old tile for undo (only first visit per drag)
+        if hasattr(self, "_paint_undo_snapshot") and (x, y) not in self._paint_undo_snapshot:
+            self._paint_undo_snapshot[(x, y)] = list(self.grid_data[y][x])
         self.grid_data[y][x] = [
             self.selected_tile_type, self.selected_variant,
             self.selected_object,    self.selected_enemy,
@@ -1488,17 +1512,11 @@ class LevelEditor(tk.Tk):
         if pivot_canvas is not None:
             tile_fx = pivot_canvas[0] / old_cs
             tile_fy = pivot_canvas[1] / old_cs
-            # We want the same screen pixel (pivot_canvas[0/1] relative to viewport)
-            # to remain over tile_fx/tile_fy after zoom.
-            # However pivot_canvas is already a canvas coord (not widget coord),
-            # so the widget offset must be accounted for separately.
-            # Store the widget-space offset of the pivot for post-redraw use.
-            vx_before = self.canvas.canvasx(0)   # canvas x of viewport left edge
+            vx_before = self.canvas.canvasx(0)
             vy_before = self.canvas.canvasy(0)
-            widget_px = pivot_canvas[0] - vx_before   # pixel inside viewport
+            widget_px = pivot_canvas[0] - vx_before
             widget_py = pivot_canvas[1] - vy_before
         elif center:
-            self.canvas.update_idletasks()
             vw = self.canvas.winfo_width()
             vh = self.canvas.winfo_height()
             cx_before = self.canvas.canvasx(vw / 2)
@@ -1510,19 +1528,27 @@ class LevelEditor(tk.Tk):
         else:
             tile_fx = tile_fy = widget_px = widget_py = None
 
-        self._redraw()
-
+        # Calculate new scroll position BEFORE redrawing so we can set it
+        # immediately after, preventing the canvas from showing wrong content
         if tile_fx is not None:
-            self.canvas.update_idletasks()
             total = MAP_SIZE * new_cs
-            # New canvas position of the pivoted tile
             new_canvas_px = tile_fx * new_cs
             new_canvas_py = tile_fy * new_cs
-            # We want 'new_canvas_px' to appear at 'widget_px' inside the viewport
             want_left = new_canvas_px - widget_px
             want_top  = new_canvas_py - widget_py
-            self.canvas.xview_moveto(max(0.0, min(1.0, want_left / total if total > 0 else 0.0)))
-            self.canvas.yview_moveto(max(0.0, min(1.0, want_top  / total if total > 0 else 0.0)))
+            want_xfrac = max(0.0, min(1.0, want_left / total if total > 0 else 0.0))
+            want_yfrac = max(0.0, min(1.0, want_top  / total if total > 0 else 0.0))
+        else:
+            want_xfrac = want_yfrac = None
+
+        self._redraw()
+
+        # Set scroll position immediately after redraw — same event loop tick,
+        # no update_idletasks() call between redraw and scroll, so no stale frame
+        if want_xfrac is not None:
+            total = MAP_SIZE * new_cs
+            self.canvas.xview_moveto(want_xfrac)
+            self.canvas.yview_moveto(want_yfrac)
 
     # ── Mouse / scroll events ─────────────────────────────────────────────────
 
@@ -1558,18 +1584,43 @@ class LevelEditor(tk.Tk):
                 self.status_var.set(f"Copied tile ({tx+1}, {ty+1}) into palette")
                 self._cancel_mode()
             return
+        if self.mode == "fill":
+            if 0 <= tx < MAP_SIZE and 0 <= ty < MAP_SIZE:
+                self._fill_start = (tx, ty)
+                self._update_fill_preview(tx, ty)
+            return
+        # Normal paint mode
         self.is_painting = True
+        self._paint_undo_snapshot: dict = {}
         if 0 <= tx < MAP_SIZE and 0 <= ty < MAP_SIZE:
             self._paint(tx, ty)
 
     def _on_paint_drag(self, event):
         if self.mode == "set_start":
             return
+        if self.mode == "fill":
+            tx, ty = self._canvas_to_tile(event)
+            tx = max(0, min(MAP_SIZE - 1, tx))
+            ty = max(0, min(MAP_SIZE - 1, ty))
+            self._update_fill_preview(tx, ty)
+            return
         tx, ty = self._canvas_to_tile(event)
         if 0 <= tx < MAP_SIZE and 0 <= ty < MAP_SIZE:
             self._paint(tx, ty)
 
     def _on_paint_end(self, event):
+        if self.mode == "fill":
+            tx, ty = self._canvas_to_tile(event)
+            tx = max(0, min(MAP_SIZE - 1, tx))
+            ty = max(0, min(MAP_SIZE - 1, ty))
+            if self._fill_start is not None:
+                self._apply_fill(tx, ty)
+            return
+        if self.is_painting:
+            # Push accumulated paint snapshot onto undo stack
+            if hasattr(self, "_paint_undo_snapshot") and self._paint_undo_snapshot:
+                self._push_undo(self._paint_undo_snapshot)
+                self._paint_undo_snapshot = {}
         self.is_painting = False
 
     def _load_tile_into_palette(self, tx: int, ty: int):
@@ -1593,6 +1644,17 @@ class LevelEditor(tk.Tk):
                                          text="Copy Tile  [click tile]  [Esc cancels]")
             self.canvas.configure(cursor="crosshair")
             self.status_var.set("COPY MODE — click any tile to load it into the palette")
+
+    def _toggle_fill_mode(self):
+        if self.mode == "fill":
+            self._cancel_mode()
+        else:
+            self._cancel_mode()
+            self.mode = "fill"
+            self.fill_btn.configure(bg="#fab387", fg="#1e1e2e",
+                                    text="Fill  [drag area]  [Esc cancels]")
+            self.canvas.configure(cursor="crosshair")
+            self.status_var.set("FILL MODE — drag left-click to fill a rectangular area")
 
     def _on_scroll(self, event):
         if event.state & 0x1:  # Shift → horizontal scroll
@@ -1626,11 +1688,17 @@ class LevelEditor(tk.Tk):
 
     def _cancel_mode(self):
         self.mode = "paint"
+        self._fill_start = None
+        if self._fill_rect_id is not None:
+            self.canvas.delete(self._fill_rect_id)
+            self._fill_rect_id = None
         if hasattr(self, "set_start_btn"):
             self.set_start_btn.configure(bg="#313244", fg="#cdd6f4",
                                          text="Click tile to set start")
         if hasattr(self, "copy_tile_btn"):
             self.copy_tile_btn.configure(bg="#45475a", fg="#cdd6f4", text="Copy Tile")
+        if hasattr(self, "fill_btn"):
+            self.fill_btn.configure(bg="#45475a", fg="#cdd6f4", text="Fill")
         self.canvas.configure(cursor="crosshair")
 
     def _set_start_at(self, tx: int, ty: int):
@@ -1639,6 +1707,93 @@ class LevelEditor(tk.Tk):
         self._cancel_mode()
         self._draw_start_marker()
         self.status_var.set(f"Player start → ({tx+1}, {ty+1}) — save to apply")
+
+    # ── Undo ─────────────────────────────────────────────────────────────────
+
+    def _push_undo(self, snapshot: dict):
+        """Push a snapshot dict {(x,y): old_tile_list} onto the undo stack."""
+        if not snapshot:
+            return
+        self._undo_stack.append(snapshot)
+        # Cap stack size to avoid unbounded memory usage
+        if len(self._undo_stack) > 200:
+            self._undo_stack.pop(0)
+
+    def _undo(self):
+        if not self._undo_stack:
+            self.status_var.set("Nothing to undo")
+            return
+        if self.grid_data is None:
+            return
+        snapshot = self._undo_stack.pop()
+        for (x, y), old_tile in snapshot.items():
+            self.grid_data[y][x] = list(old_tile)
+            self._repaint_tile(x, y)
+        self.status_var.set(f"Undo — restored {len(snapshot)} tile(s)  "
+                            f"({len(self._undo_stack)} step(s) left)")
+
+    def _repaint_tile(self, x: int, y: int):
+        """Redraw a single tile without touching grid lines or start marker."""
+        cs = self.cell_size
+        x0, y0 = x * cs, y * cs
+        tile_ids = set(self.canvas.find_withtag("tile"))
+        for iid in self.canvas.find_overlapping(x0, y0, x0+cs-1, y0+cs-1):
+            if iid in tile_ids:
+                self.canvas.delete(iid)
+        self._draw_tile(x, y)
+        sx, sy = self.start_pos
+        if (sx - 1) == x and (sy - 1) == y:
+            self._draw_start_marker()
+
+    def _update_fill_preview(self, tx: int, ty: int):
+        """Draw a translucent rectangle showing the fill area while dragging."""
+        if self._fill_rect_id is not None:
+            self.canvas.delete(self._fill_rect_id)
+            self._fill_rect_id = None
+        if self._fill_start is None:
+            return
+        cs = self.cell_size
+        x0 = min(self._fill_start[0], tx) * cs
+        y0 = min(self._fill_start[1], ty) * cs
+        x1 = (max(self._fill_start[0], tx) + 1) * cs
+        y1 = (max(self._fill_start[1], ty) + 1) * cs
+        self._fill_rect_id = self.canvas.create_rectangle(
+            x0, y0, x1, y1,
+            outline="#fab387", width=2, fill="#fab38730", tags="fill_preview")
+
+    def _apply_fill(self, tx: int, ty: int):
+        """Fill the rectangle from _fill_start to (tx,ty) with the current tile."""
+        if self._fill_rect_id is not None:
+            self.canvas.delete(self._fill_rect_id)
+            self._fill_rect_id = None
+        if self.grid_data is None or self._fill_start is None:
+            self._fill_start = None
+            return
+        self._update_selection()
+        x0 = min(self._fill_start[0], tx)
+        y0 = min(self._fill_start[1], ty)
+        x1 = max(self._fill_start[0], tx)
+        y1 = max(self._fill_start[1], ty)
+        self._fill_start = None
+
+        new_tile = [
+            self.selected_tile_type, self.selected_variant,
+            self.selected_object,    self.selected_enemy,
+            self.selected_gold,      self.selected_extra,
+        ]
+        snapshot: dict = {}
+        for fy in range(y0, y1 + 1):
+            for fx in range(x0, x1 + 1):
+                snapshot[(fx, fy)] = list(self.grid_data[fy][fx])
+                self.grid_data[fy][fx] = list(new_tile)
+        self._push_undo(snapshot)
+
+        for fy in range(y0, y1 + 1):
+            for fx in range(x0, x1 + 1):
+                self._repaint_tile(fx, fy)
+
+        count = (x1 - x0 + 1) * (y1 - y0 + 1)
+        self.status_var.set(f"Filled {count} tile(s)  ({x0+1},{y0+1}) → ({x1+1},{y1+1})")
 
     # ── Info panel ────────────────────────────────────────────────────────────
 
